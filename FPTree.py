@@ -1,10 +1,10 @@
-from graphviz import Digraph
-from HashTable import HashTable
+
+from HashTable import ChainHashMap
 class Fp_node:
     def __init__(self, value, count=1, parent=None):
         self.value = value
         self.count = count
-        self.children = HashTable()  
+        self.children = ChainHashMap()  
         self.parent = parent
 
     def increment_count(self):
@@ -12,54 +12,57 @@ class Fp_node:
 
     def add_child(self, child_node):
         """Ajoute un enfant dans la table de hachage"""
-        self.children.put(child_node.value, child_node)
+        self.children[child_node.value] = child_node
 
     def get_child(self, value):
         """Retourne l’enfant si existe"""
-        return self.children.get(value)
+        try:
+            return self.children[value]
+        except KeyError:
+            return None
 
     def display(self, level=0):
         print("* " * level + f"{self.value}: {self.count}")
-        # afficher les enfants en parcourant la HashTable
-        for i, node in enumerate(self.children.table):
-            curr = node
-            while curr:
-                curr.value.display(level + 1)
-                curr = curr.next
+        # afficher les enfants en parcourant la ChainHashMap
+        for key in self.children:
+            self.children[key].display(level + 1)
 
 
 class FP_Tree:
     def __init__(self):
         self.root = Fp_node("Root", count=0)
-        self.header_table = HashTable()  # {item: [count, [liste de nœuds]]}
+        self.header_table = ChainHashMap()  # {item: [count, [liste de nœuds]]}
 
     def update_header(self, item, node):
         """Met à jour la table d’en-tête"""
-        entry = self.header_table.get(item)
-        if entry:
-            entry[0] += 1
+        try:
+            entry = self.header_table[item]
+            entry[0] += node.count
             entry[1].append(node)
-            self.header_table.put(item, entry)
-        else:
-            self.header_table.put(item, [1, [node]])
+            self.header_table[item] = entry
+        except KeyError:
+            self.header_table[item] = [node.count, [node]]
     def add_transactions(self, transactions):
-        freq = HashTable()
+        freq = ChainHashMap()
         for tr in transactions:
             for item in tr:
-                count = freq.get(item)
-                if count:
-                    freq.put(item, count + 1)
-                else:
-                    freq.put(item, 1)
+                try:
+                    count = freq[item]
+                    freq[item] = count + 1
+                except KeyError:
+                    freq[item] = 1
         for tr in transactions:
             res =[]
             for item in tr:
-                count = freq.get(item)
+                try:
+                    count = freq[item]
+                except KeyError:
+                    count = 0
                 res.append((count, item))
             res.sort(reverse=True)
             self.add_transaction(res[i][1] for i in range (len(res)))
     def add_transaction(self, tr):
-        """Ajoute une transaction (liste ditems) dans le FP-Tree"""
+        """Ajoute une transaction (liste d’items) dans le FP-Tree"""
         current_node = self.root
         for item in tr:
                 child = current_node.get_child(item)
@@ -78,9 +81,7 @@ class FP_Tree:
 
     def display_header_table(self):
         print("\nHeader Table:")
-        for i, node in enumerate(self.header_table.table):
-            curr = node
-            while curr:
-                item, (count, nodes) = curr.key, curr.value
-                print(f"{item}: count={count}, occurrences={len(nodes)}")
-                curr = curr.next
+        for item in self.header_table:
+            count, nodes = self.header_table[item]
+            print(f"{item}: count={count}, occurrences={len(nodes)}")
+

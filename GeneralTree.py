@@ -7,7 +7,11 @@
 "print textuel"
 "visualize"
 
-from graphviz import Digraph
+try:
+    from graphviz import Digraph
+    _GV_AVAILABLE = True
+except Exception:
+    _GV_AVAILABLE = False
 from HashTable import ChainHashMap
 
 class TreeNode:
@@ -57,11 +61,14 @@ class TreeNode:
     # visualisation adcii
     def print_textual(self, level=0):
         print("  " * level + f"- {self.value}")
-        for child in self.children:
-            child.print_textual(level + 1)
+        for key in self.children:
+            self.children[key].print_textual(level + 1)
 
     # visualisation graphic avec graphviz Digraph
     def visualize(self, filename="tree", view=True):
+        if not _GV_AVAILABLE:
+            print("Graphviz not installed; skipping visualization.")
+            return
         dot = Digraph(comment="General Tree", format='png')
         self._add_nodes(dot)
         dot.render(filename, view=view)
@@ -74,28 +81,3 @@ class TreeNode:
             child._add_nodes(dot)
 
 
-#EXEMPLE
-if __name__ == "__main__":
-    root = TreeNode("A")
-    b = TreeNode("B")
-    c = TreeNode("C")
-    d = TreeNode("D")
-    e = TreeNode("E")
-    f = TreeNode("F")
-    x  = TreeNode("X")
-
-    root.attach_child(b)
-    root.attach_child(c)
-    b.attach_child(d)
-    b.attach_child(e)
-    c.attach_child(f)
-    f.attach_child(x)
-
-    print("Textual Tree:")
-    root.print_textual()
-
-    print("\nAncestors of x:", [a.value for a in x.ancestors()])
-    print("Number of children of B:", b.nb_children())
-
-    
-    root.visualize("tree_example")

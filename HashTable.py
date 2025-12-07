@@ -149,27 +149,8 @@ class ChainHashMap(HashMapBase):
             if bucket is not None:
                 cur = bucket.head
                 while cur:
-                    #yield cur.key
+                    yield cur.key
                     cur = cur.next
 
 
-# ----------------------------
-# Example 
-# ----------------------------
-if __name__ == "__main__":
-    m = ChainHashMap()
-    m["name"] = "hama"
-    m["age"] = 25
-    m["city"] = "souussa"
 
-    print(m["name"])      # hama
-    print(len(m))         # 3
-
-    m["age"] = 26
-    print("city" in m)    # True
-
-    for key in m:
-        print(f"{key}: {m[key]}")
-
-    del m["city"]
-    print(len(m))         # 2

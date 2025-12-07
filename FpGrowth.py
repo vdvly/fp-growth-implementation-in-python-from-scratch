@@ -8,8 +8,8 @@ def _ht_get(ht, key):
 
 
 def build_fp_tree(transactions, min_support):
+
 	
-	# Count global frequencies using HashTable
 	freq = ChainHashMap()
 	for tr in transactions:
 		for item in tr:
@@ -19,6 +19,8 @@ def build_fp_tree(transactions, min_support):
 			except KeyError:
 				freq[item] = 1
 
+	
+	
 	frequent = {}
 	for bucket in freq._table:
 		if bucket is None:
@@ -32,11 +34,13 @@ def build_fp_tree(transactions, min_support):
 	if not frequent:
 		return None
 
+	
 	def sort_key(item):
 		return (-frequent[item], item)
 
 	tree = FP_Tree()
 
+	
 	def add_transaction_with_count(tr, count=1):
 		current = tree.root
 		for item in tr:
@@ -46,16 +50,18 @@ def build_fp_tree(transactions, min_support):
 			else:
 				new_node = Fp_node(item, count=count, parent=current)
 				current.add_child(new_node)
-				entry = tree.header_table.get(item)
-				if entry:
+				
+				try:
+					entry = tree.header_table[item]
 					entry[0] += new_node.count
 					entry[1].append(new_node)
-					tree.header_table.put(item, entry)
-				else:
-					tree.header_table.put(item, [new_node.count, [new_node]])
+					tree.header_table[item] = entry
+				except KeyError:
+					tree.header_table[item] = [new_node.count, [new_node]]
 				child = new_node
 			current = child
 
+	
 	for tr in transactions:
 		filtered = [item for item in tr if item in frequent]
 		if not filtered:
@@ -67,7 +73,7 @@ def build_fp_tree(transactions, min_support):
 
 
 def _conditional_pattern_base(item, tree):
-	"""Return list of (prefix_path_list, count) for given item from tree."""
+	
 	try:
 		entry = tree.header_table[item]
 	except KeyError:
@@ -88,9 +94,8 @@ def _conditional_pattern_base(item, tree):
 
 
 def build_conditional_tree(patterns, min_support):
-	"""patterns: list of (path_list, count)
-	returns FP_Tree or None
-	"""
+
+	
 	freq = ChainHashMap()
 	for path, cnt in patterns:
 		for item in path:
@@ -100,6 +105,7 @@ def build_conditional_tree(patterns, min_support):
 			except KeyError:
 				freq[item] = cnt
 
+	
 	frequent = {}
 	for bucket in freq._table:
 		if bucket is None:
@@ -112,16 +118,19 @@ def build_conditional_tree(patterns, min_support):
 	if not frequent:
 		return None
 
+	
 	def sort_key(item):
 		return (-frequent[item], item)
 
 	tree = FP_Tree()
 
+	
 	for path, cnt in patterns:
 		filtered = [it for it in path if it in frequent]
 		if not filtered:
 			continue
 		filtered.sort(key=sort_key)
+		
 		current = tree.root
 		for item in filtered:
 			child = current.get_child(item)
@@ -130,13 +139,13 @@ def build_conditional_tree(patterns, min_support):
 			else:
 				new_node = Fp_node(item, count=cnt, parent=current)
 				current.add_child(new_node)
-				entry = tree.header_table.get(item)
-				if entry:
+				try:
+					entry = tree.header_table[item]
 					entry[0] += new_node.count
 					entry[1].append(new_node)
-					tree.header_table.put(item, entry)
-				else:
-					tree.header_table.put(item, [new_node.count, [new_node]])
+					tree.header_table[item] = entry
+				except KeyError:
+					tree.header_table[item] = [new_node.count, [new_node]]
 				child = new_node
 			current = child
 
@@ -149,7 +158,9 @@ def mine_tree(tree, min_support, prefix=None, frequent_itemsets=None):
 	if frequent_itemsets is None:
 		frequent_itemsets = []
 
+	
 	items = []
+	
 	for bucket in tree.header_table._table:
 		if bucket is None:
 			continue
@@ -161,12 +172,14 @@ def mine_tree(tree, min_support, prefix=None, frequent_itemsets=None):
 			items.append((k, support))
 			cur = cur.next
 
+	
 	items.sort(key=lambda x: (x[1], x[0]))
 
 	for item, support in items:
 		new_freq_set = prefix + [item]
 		frequent_itemsets.append((new_freq_set, support))
 
+		
 		patterns = _conditional_pattern_base(item, tree)
 		conditional_tree = build_conditional_tree(patterns, min_support)
 		if conditional_tree:
@@ -180,7 +193,3 @@ def fpgrowth(transactions, min_support):
 	if not tree:
 		return []
 	return mine_tree(tree, min_support)
-
-
-
-
